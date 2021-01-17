@@ -8,4 +8,4 @@ This repo provides a list of additional WPILib Romi example projects. These proj
 2. [Trajectory Follower](romi-trajectory-ramsete/)
 
 ### COTS Mechanisms
-1. [Simple Robot Arm](SimpleArm/)
+1. [Simple Robot Arm](simpleArm/)
