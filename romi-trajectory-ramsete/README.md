@@ -10,7 +10,7 @@ None
 
 ## Additional Configuration Required
 - Ensure that the gyro has been [calibrated using the web UI](https://docs.wpilib.org/en/stable/docs/romi-robot/web-ui.html#imu-calibration)
-- For best results, you should run a characterization on your Romi since there might be slight variations between Romis (due to assembly, mechanical difference, etc)
+- For best results, you should [run a characterization on your Romi](../romi-characterization) since there might be slight variations between Romis (due to assembly, mechanical difference, etc)
 
 ## Additional Code Setup
 The trajectory can be modified by editing the `generateRamseteCommand` method in `RobotContainer.java`
