@@ -18,6 +18,18 @@ Start the frc-characterization data logger. Ensure that the team number is set t
 #### Step 3
 You can now run the tests, following the instructions on [FRC docs](https://docs.wpilib.org/en/stable/docs/software/wpilib-tools/robot-characterization/characterization-routine.html#running-tests)
 
+Note that the data you get from the logger are in **rotations**. The diagram below shows example analyzer settings
+
+![Analyzer Settings](doc-resources/romi-char-analyzer.png)
+
+1. Set the Units to Meters, and put in the approriate circumference (Noting that the Romi wheels have a diameter of `0.07 meters`.
+
+2. You might need to tweak the Motion threshold a little. These values worked for a particular set of data
+
+3. Switch the Gain Settings Preset to WPILib (2020-)
+
+The constants should be pluggable into the Romi Trajectory example, with some minor tweaks to `kP` and potentially the Ramsete constants.
+
 
 ## Additional Hardware Required
 None
