@@ -13,10 +13,15 @@ public class JoystickArmCommand extends CommandBase {
 
   private final Arm m_arm;
   private final Joystick m_joystick;
-
-  private double m_delta = 0.005;
   private long m_startTime = 0;
 
+  /* Creates a new command which controls the arm via 
+   * a Joystick.
+   * 
+   * @param arm Arm subsystem
+   * @param joystick Joystick to be used to control the arm
+   * 
+   */
   public JoystickArmCommand(Arm arm, Joystick joystick) {
     m_arm = arm;
     m_joystick = joystick;
@@ -38,23 +43,23 @@ public class JoystickArmCommand extends CommandBase {
       m_startTime = System.currentTimeMillis();
     }
 
-    if(m_joystick.getRawButton(Constants.Button.TOPLEFT)) {
-      m_arm.incrementLift(-m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.TOPLEFT)) {
+      m_arm.incrementLift(-Constants.Arm.SERVO_INCREMENT);
     }
-    if(m_joystick.getRawButton(Constants.Button.TOPRIGHT)) {
-      m_arm.incrementLift(m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.TOPRIGHT)) {
+      m_arm.incrementLift(Constants.Arm.SERVO_INCREMENT);
     }
-    if(m_joystick.getRawButton(Constants.Button.BOTTOMLEFT)) {
-      m_arm.incrementTilt(m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.BOTTOMLEFT)) {
+      m_arm.incrementTilt(Constants.Arm.SERVO_INCREMENT);
     }
-    if(m_joystick.getRawButton(Constants.Button.BOTTOMRIGHT)) {
-      m_arm.incrementTilt(-m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.BOTTOMRIGHT)) {
+      m_arm.incrementTilt(-Constants.Arm.SERVO_INCREMENT);
     }
-    if(m_joystick.getRawButton(Constants.Button.Y)) {
-      m_arm.incrementGripper(m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.Y)) {
+      m_arm.incrementGripper(Constants.Arm.SERVO_INCREMENT);
     }
-    if(m_joystick.getRawButton(Constants.Button.B)) {
-      m_arm.incrementGripper(-m_delta);
+    if(m_joystick.getRawButton(Constants.Joystick.B)) {
+      m_arm.incrementGripper(-Constants.Arm.SERVO_INCREMENT);
     }
   }
 
