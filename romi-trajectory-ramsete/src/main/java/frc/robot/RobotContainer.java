@@ -326,7 +326,7 @@ public class RobotContainer {
     // Setup SmartDashboard options
     m_chooser.setDefaultOption("Ramsete Trajectory", generateRamseteCommand());
     m_chooser.addOption("ZigZag Trajectory", generateZigZagCommand());
-    m_chooser.addOption("BackDiagonalRight Trajectory", generateZigZagCommand());
+    m_chooser.addOption("BackDiagonalRight Trajectory", generateBackDiagonalRightCommand());
     //
     //----   copy this command and paste it below the comment ----
     //----   replace {yourName} with the name of the function you just created ---
