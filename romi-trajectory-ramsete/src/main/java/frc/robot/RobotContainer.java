@@ -250,8 +250,62 @@ public class RobotContainer {
         // Finally, we make sure that the robot stops
         .andThen(new InstantCommand(() -> m_drivetrain.tankDriveVolts(0, 0), m_drivetrain));
   } 
+ //------------------------- BackDiagonal Right
 
+  private Command generateBackDiagonalRightCommand() {
+    var autoVoltageConstraint =
+        new DifferentialDriveVoltageConstraint(
+            new SimpleMotorFeedforward(DriveConstants.ksVolts, 
+                                       DriveConstants.kvVoltSecondsPerMeter, 
+                                       DriveConstants.kaVoltSecondsSquaredPerMeter),
+            DriveConstants.kDriveKinematics,
+            10);
 
+    TrajectoryConfig config =
+        new TrajectoryConfig(AutoConstants.kMaxSpeedMetersPerSecond, 
+                             AutoConstants.kMaxAccelerationMetersPerSecondSquared)
+            .setKinematics(DriveConstants.kDriveKinematics)
+            .addConstraint(autoVoltageConstraint);
+
+    // This trajectory can be modified to suit your purposes
+    // Note that all coordinates are in meters, and follow NWU conventions.
+    // If you would like to specify coordinates in inches (which might be easier
+    // to deal with for the Romi), you can use the Units.inchesToMeters() method
+    Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
+        // Start at the origin facing the +X direction
+        new Pose2d(0, 0, new Rotation2d(0)),
+        List.of(
+            new Translation2d(-0.5, -0.25),
+            new Translation2d(-1.0, -0.5),
+            new Translation2d(-1.5, -1.5)
+        ),
+        new Pose2d(-1.5, -1.5, new Rotation2d(0)),
+        config);
+
+    RamseteCommand ramseteCommand = new RamseteCommand(
+        exampleTrajectory,
+        m_drivetrain::getPose,
+        new RamseteController(AutoConstants.kRamseteB, AutoConstants.kRamseteZeta),
+        new SimpleMotorFeedforward(DriveConstants.ksVolts, DriveConstants.kvVoltSecondsPerMeter, DriveConstants.kaVoltSecondsSquaredPerMeter),
+        DriveConstants.kDriveKinematics,
+        m_drivetrain::getWheelSpeeds,
+        new PIDController(DriveConstants.kPDriveVel, 0, 0),
+        new PIDController(DriveConstants.kPDriveVel, 0, 0),
+        m_drivetrain::tankDriveVolts,
+        m_drivetrain);
+
+    m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose());
+
+    // Set up a sequence of commands
+    // First, we want to reset the drivetrain odometry
+    return new InstantCommand(() -> m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose()), m_drivetrain)
+        // next, we run the actual ramsete command
+        .andThen(ramseteCommand)
+
+        // Finally, we make sure that the robot stops
+        .andThen(new InstantCommand(() -> m_drivetrain.tankDriveVolts(0, 0), m_drivetrain));
+  } 
+ //--------------------------- end BackDiagonal right -----------------------------
   /**
    * Use this method to define your button->command mappings. Buttons can be created by
    * instantiating a {@link GenericHID} or one of its subclasses ({@link
@@ -272,6 +326,7 @@ public class RobotContainer {
     // Setup SmartDashboard options
     m_chooser.setDefaultOption("Ramsete Trajectory", generateRamseteCommand());
     m_chooser.addOption("ZigZag Trajectory", generateZigZagCommand());
+    m_chooser.addOption("BackDiagonalRight Trajectory", generateZigZagCommand());
     //
     //----   copy this command and paste it below the comment ----
     //----   replace {yourName} with the name of the function you just created ---
@@ -280,6 +335,7 @@ public class RobotContainer {
     m_chooser.addOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
     m_chooser.addOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooser.addOption("BackLeft Trajectory", generateBackLeftCommand());
+    m_chooser.addOption("BackDiagonalRight Trajectory", generateBackDiagonalRightCommand());
     
     SmartDashboard.putData(m_chooser);
   }
