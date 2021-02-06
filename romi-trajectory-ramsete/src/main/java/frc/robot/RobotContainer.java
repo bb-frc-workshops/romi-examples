@@ -221,7 +221,8 @@ public class RobotContainer {
     m_chooser.setDefaultOption("Ramsete Trajectory", generateRamseteCommand());
     m_chooser.addOption("ZigZag Trajectory", generateZigZagCommand());
     //
-    //----   edit and uncomment this to use your command ----
+    //----   copy this command and paste it below the comment ----
+    //----   replace {yourName} with the name of the function you just created ---
     //
     // m_chooser.addOption("{yourName} Trajectory", generate{yourname}Command());
     m_chooser.addOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
