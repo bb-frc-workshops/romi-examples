@@ -35,7 +35,7 @@ dependencies {
 
 // Set the websocket remote host (the Romi IP address).
 sim {
-  envVar "HALSIMWS_HOST", "10.0.0.19"
+  envVar "HALSIMWS_HOST", "10.0.0.2"
 }
 
 // Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
