@@ -57,7 +57,7 @@ public class RomiDrivetrain {
   public void tankDrive(double leftSpeed, double rightSpeed, boolean squareInputs) {
     m_diffDrive.tankDrive(leftSpeed, rightSpeed, squareInputs);
   }
- 
+
   public void tankDriveVolts(double leftVolts, double rightVolts) {
     m_leftMotor.setVoltage(leftVolts);
     m_rightMotor.setVoltage(rightVolts);

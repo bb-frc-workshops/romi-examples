@@ -145,6 +145,8 @@ public class Robot extends TimedRobot {
 
     String testType = m_sysIdTestTypeEntry.getString(null);
     if ("Quasistatic".equals(testType)) {
+      // FIXME Doesn't look like this is correct. frc-characterization has different logic for this
+      //   see https://github.com/wpilibsuite/frc-characterization/blob/1140c8eda1fb44f30c24cd383598521c55d17e77/frc_characterization/logger_analyzer/data_logger.py#L195-L220
       voltage = m_priorVoltage + reqVoltage * kPeriod; // ramp rate (V/s)
     } else if ("Dynamic".equals(testType)) {
       voltage = reqVoltage; // stepVoltage
@@ -200,7 +202,7 @@ public class Robot extends TimedRobot {
   public void disabledInit() {
     double elapsedTime = Timer.getFPGATimestamp() - m_startTime;
     System.out.println("Robot disabled");
-    m_drivetrain.tankDrive(0, 0);
+    m_drivetrain.tankDriveVolts(0, 0);
 
     // data processing step
     m_data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
