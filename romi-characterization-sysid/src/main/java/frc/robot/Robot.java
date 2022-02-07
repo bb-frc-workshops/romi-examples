@@ -9,10 +9,10 @@ package frc.robot;
 
 import java.util.ArrayList;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -28,6 +28,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
+  static final double kPeriod = 0.005; // 5 ms (normal loop is 20 ms)
+
   XboxController m_stick;
 
   Supplier<Double> m_leftEncoderPosition;
@@ -35,25 +37,27 @@ public class Robot extends TimedRobot {
   Supplier<Double> m_leftEncoderRate;
   Supplier<Double> m_rightEncoderRate;
   Supplier<Double> m_gyroAngleRadians;
+  Supplier<Double> m_gyroAngleRate;
 
-  NetworkTableEntry m_autoSpeedEntry = NetworkTableInstance.getDefault().getEntry("/robot/autospeed");
-  NetworkTableEntry m_telemetryEntry = NetworkTableInstance.getDefault().getEntry("/robot/telemetry");
-  NetworkTableEntry m_rotateEntry = NetworkTableInstance.getDefault().getEntry("/robot/rotate");
-  
+  NetworkTableEntry m_sysIdTelemetryEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTelemetry");
+  NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
+  NetworkTableEntry m_sysIdTestTypeEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTestType");
+  NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmardDashboard/SysIdRotate");
+
   String m_data = "";
 
   int m_counter = 0;
   double m_startTime = 0;
-  double m_priorAutoSpeed = 0;
+  double m_priorVoltage = 0;
 
-  double[] m_numberArray = new double[10];
+  double[] m_numberArray = new double[9];
   ArrayList<Double> m_entries = new ArrayList<>();
   
   private final RomiDrivetrain m_drivetrain = new RomiDrivetrain();
   private final RomiGyro m_gyro = new RomiGyro();
 
   public Robot() {
-    super(0.005);
+    super(kPeriod);
     LiveWindow.disableAllTelemetry();
   }
 
@@ -70,6 +74,7 @@ public class Robot extends TimedRobot {
     // Note that the angle from the gyro must be negated because 
     // getAngle returns a clockwise positive
     m_gyroAngleRadians = () -> -1 * Math.toRadians(-m_gyro.getAngleZ());
+    m_gyroAngleRate = () -> m_gyro.getRateZ();
 
     m_leftEncoderPosition = m_drivetrain::getLeftDistance;
     m_leftEncoderRate = m_drivetrain::getLeftEncoderRate;
@@ -122,9 +127,6 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    // NOTE: This logic is basically copied from the project that frc-characterization
-    // generates
-    
     // Retrieve values to send back before telling the motors to do something
     double now = Timer.getFPGATimestamp();
 
@@ -134,34 +136,39 @@ public class Robot extends TimedRobot {
     double rightPosition = m_rightEncoderPosition.get();
     double rightRate = m_rightEncoderRate.get();
 
-    // The battery voltage is scaled to 12V
-    double battery = RobotController.getBatteryVoltage();
+    double gyroAngle = m_gyroAngleRadians.get();
+    double gyroAngleRate = m_gyroAngleRate.get();
 
-    double motorVolts = battery * Math.abs(m_priorAutoSpeed);
+    // Retreive the test type & voltage entries
+    double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
+    double voltage = 0;
 
-    double leftMotorVolts = motorVolts;
-    double rightMotorVolts = motorVolts;
+    String testType = m_sysIdTestTypeEntry.getString(null);
+    if ("Quasistatic".equals(testType)) {
+      voltage = m_priorVoltage + reqVoltage * kPeriod; // ramp rate (V/s)
+    } else if ("Dynamic".equals(testType)) {
+      voltage = reqVoltage; // stepVoltage
+    }
 
-    // Retrieve the commanded speed from NetworkTables
-    double autospeed = m_autoSpeedEntry.getDouble(0);
-    m_priorAutoSpeed = autospeed;
+    double leftMotorVolts = voltage;
+    double rightMotorVolts = voltage;
+
+    m_priorVoltage = voltage;
 
     // Command motors to do things
-    m_drivetrain.tankDrive(
-      (m_rotateEntry.getBoolean(false) ? -1 : 1) * autospeed, autospeed,
-      false
+    m_drivetrain.tankDriveVolts(
+      (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * voltage, voltage
     );
 
     m_numberArray[0] = now;
-    m_numberArray[1] = battery;
-    m_numberArray[2] = autospeed;
-    m_numberArray[3] = leftMotorVolts;
-    m_numberArray[4] = rightMotorVolts;
-    m_numberArray[5] = leftPosition;
-    m_numberArray[6] = rightPosition;
-    m_numberArray[7] = leftRate;
-    m_numberArray[8] = rightRate;
-    m_numberArray[9] = m_gyroAngleRadians.get();
+    m_numberArray[1] = leftMotorVolts;
+    m_numberArray[2] = rightMotorVolts;
+    m_numberArray[3] = leftPosition;
+    m_numberArray[4] = rightPosition;
+    m_numberArray[5] = leftRate;
+    m_numberArray[6] = rightRate;
+    m_numberArray[7] = gyroAngle;
+    m_numberArray[8] = gyroAngleRate;
 
     // Add data to a string that is uploaded to NT
     for (double num : m_numberArray) {
@@ -196,9 +203,8 @@ public class Robot extends TimedRobot {
     m_drivetrain.tankDrive(0, 0);
 
     // data processing step
-    m_data = m_entries.toString();
-    m_data = m_data.substring(1, m_data.length() - 1) + ", ";
-    m_telemetryEntry.setString(m_data);
+    m_data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
+    m_sysIdTelemetryEntry.setString(m_data);
     m_entries.clear();
     System.out.println("Collected: " + m_counter + " in " + elapsedTime + " seconds");
     m_data = "";
