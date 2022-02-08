@@ -43,6 +43,8 @@ public class Robot extends TimedRobot {
   NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
   NetworkTableEntry m_sysIdTestTypeEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTestType");
   NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmardDashboard/SysIdRotate");
+  NetworkTableEntry m_sysIdTestEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTest");
+  NetworkTableEntry m_sysIdWrongMechEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdWrongMech");
 
   String m_data = "";
 
@@ -101,6 +103,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("l_encoder_rate", m_leftEncoderRate.get());
     SmartDashboard.putNumber("r_encoder_pos", m_rightEncoderPosition.get());
     SmartDashboard.putNumber("r_encoder_rate", m_rightEncoderRate.get());
+    SmartDashboard.putNumber("m_priorVoltage", m_priorVoltage);
   }
 
   /**
@@ -127,9 +130,26 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    // Retrieve values to send back before telling the motors to do something
     double now = Timer.getFPGATimestamp();
+    double voltage = 0.0;
 
+    // Make sure that test is for correct mechanism
+    String test = m_sysIdTestEntry.getString(null);
+    if (!"Drivetrain".equals(test)) {
+      m_sysIdWrongMechEntry.setBoolean(true);
+    } else {
+      // Retreive the test type & voltage entries
+      double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
+
+      String testType = m_sysIdTestTypeEntry.getString(null);
+      if ("Quasistatic".equals(testType)) {
+        voltage = reqVoltage * (now - m_startTime);
+      } else if ("Dynamic".equals(testType)) {
+        voltage = reqVoltage; // stepVoltage
+      }
+    }
+
+    // Retrieve values to send back before telling the motors to do something
     double leftPosition = m_leftEncoderPosition.get();
     double leftRate = m_leftEncoderRate.get();
 
@@ -139,25 +159,13 @@ public class Robot extends TimedRobot {
     double gyroAngle = m_gyroAngleRadians.get();
     double gyroAngleRate = m_gyroAngleRate.get();
 
-    // Retreive the test type & voltage entries
-    double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
-    double voltage = 0;
-
-    String testType = m_sysIdTestTypeEntry.getString(null);
-    if ("Quasistatic".equals(testType)) {
-      // FIXME Doesn't look like this is correct. frc-characterization has different logic for this
-      //   see https://github.com/wpilibsuite/frc-characterization/blob/1140c8eda1fb44f30c24cd383598521c55d17e77/frc_characterization/logger_analyzer/data_logger.py#L195-L220
-      voltage = m_priorVoltage + reqVoltage * kPeriod; // ramp rate (V/s)
-    } else if ("Dynamic".equals(testType)) {
-      voltage = reqVoltage; // stepVoltage
-    }
-
     double leftMotorVolts = voltage;
     double rightMotorVolts = voltage;
 
     m_priorVoltage = voltage;
 
     // Command motors to do things
+    // FIXME check what needs to be done for limiting max voltage
     m_drivetrain.tankDriveVolts(
       (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * voltage, voltage
     );
