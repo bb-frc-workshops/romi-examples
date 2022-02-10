@@ -11,8 +11,10 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -28,7 +30,26 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  static final double kPeriod = 0.005; // 5 ms (normal loop is 20 ms)
+  private class QuasistaticVoltageSupplier implements Supplier<Double> {
+    private double rampRate = 0.0;
+    private double currentVoltage = 0.0;
+    private int counter = 0;
+
+    public QuasistaticVoltageSupplier(double rampRate) {
+      this.rampRate = rampRate;
+    }
+
+    @Override
+    public Double get() {
+      // Simple rate limiter. Without it Romi will keep running for at least
+      // a couple of seconds after disabling it
+      if (++counter == 10) {
+        this.currentVoltage = this.rampRate * (Timer.getFPGATimestamp() - m_startTime);
+        this.counter = 0;
+      }
+      return this.currentVoltage;
+    }
+  }
 
   XboxController m_stick;
 
@@ -38,6 +59,7 @@ public class Robot extends TimedRobot {
   Supplier<Double> m_rightEncoderRate;
   Supplier<Double> m_gyroAngleRadians;
   Supplier<Double> m_gyroAngleRate;
+  Supplier<Double> m_voltageSupplier;
 
   NetworkTableEntry m_sysIdTelemetryEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTelemetry");
   NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
@@ -45,12 +67,11 @@ public class Robot extends TimedRobot {
   NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmardDashboard/SysIdRotate");
   NetworkTableEntry m_sysIdTestEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTest");
   NetworkTableEntry m_sysIdWrongMechEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdWrongMech");
-
-  String m_data = "";
+  NetworkTableEntry m_sysIdOverflowEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdOverflow");
 
   int m_counter = 0;
   double m_startTime = 0;
-  double m_priorVoltage = 0;
+  double m_motorVoltage = 0;
 
   double[] m_numberArray = new double[9];
   ArrayList<Double> m_entries = new ArrayList<>();
@@ -59,7 +80,7 @@ public class Robot extends TimedRobot {
   private final RomiGyro m_gyro = new RomiGyro();
 
   public Robot() {
-    super(kPeriod);
+    super(0.005); // 5 ms
     LiveWindow.disableAllTelemetry();
   }
 
@@ -99,11 +120,11 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // These aren't actually used by the characterization tool, but serve as 
     // a debugging aid
-    SmartDashboard.putNumber("l_encoder_pos", m_leftEncoderPosition.get());
-    SmartDashboard.putNumber("l_encoder_rate", m_leftEncoderRate.get());
-    SmartDashboard.putNumber("r_encoder_pos", m_rightEncoderPosition.get());
-    SmartDashboard.putNumber("r_encoder_rate", m_rightEncoderRate.get());
-    SmartDashboard.putNumber("m_priorVoltage", m_priorVoltage);
+    SmartDashboard.putNumber("Left Encoder Position", m_leftEncoderPosition.get());
+    SmartDashboard.putNumber("Left Encoder Rate", m_leftEncoderRate.get());
+    SmartDashboard.putNumber("Right Encoder Position", m_rightEncoderPosition.get());
+    SmartDashboard.putNumber("Right Encoder Rate", m_rightEncoderRate.get());
+    SmartDashboard.putNumber("Motor Voltage", m_motorVoltage);
   }
 
   /**
@@ -120,9 +141,31 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     System.out.println("Robot in autonomous mode");
+
     m_drivetrain.resetEncoders();
+    m_gyro.reset();
+
     m_startTime = Timer.getFPGATimestamp();
+    m_voltageSupplier = createVoltageSupplier();
     m_counter = 0;
+  }
+
+  private Supplier<Double> createVoltageSupplier() {
+    String test = m_sysIdTestEntry.getString(null);
+    if (!"Drivetrain".equals(test)) {
+      m_sysIdWrongMechEntry.setBoolean(true);
+    } else {
+      // Retreive test type & voltage from network table
+      double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
+      String testType = m_sysIdTestTypeEntry.getString(null);
+
+      if ("Quasistatic".equals(testType)) {
+        return new QuasistaticVoltageSupplier(reqVoltage);
+      } else if ("Dynamic".equals(testType)) {
+        return () -> reqVoltage;
+      }
+    }
+    return () -> 0.0;
   }
 
   /**
@@ -131,23 +174,6 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     double now = Timer.getFPGATimestamp();
-    double voltage = 0.0;
-
-    // Make sure that test is for correct mechanism
-    String test = m_sysIdTestEntry.getString(null);
-    if (!"Drivetrain".equals(test)) {
-      m_sysIdWrongMechEntry.setBoolean(true);
-    } else {
-      // Retreive the test type & voltage entries
-      double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
-
-      String testType = m_sysIdTestTypeEntry.getString(null);
-      if ("Quasistatic".equals(testType)) {
-        voltage = reqVoltage * (now - m_startTime);
-      } else if ("Dynamic".equals(testType)) {
-        voltage = reqVoltage; // stepVoltage
-      }
-    }
 
     // Retrieve values to send back before telling the motors to do something
     double leftPosition = m_leftEncoderPosition.get();
@@ -159,15 +185,15 @@ public class Robot extends TimedRobot {
     double gyroAngle = m_gyroAngleRadians.get();
     double gyroAngleRate = m_gyroAngleRate.get();
 
-    double leftMotorVolts = voltage;
-    double rightMotorVolts = voltage;
+    double leftMotorVolts = m_motorVoltage;
+    double rightMotorVolts = m_motorVoltage;
 
-    m_priorVoltage = voltage;
+    double battery = RobotController.getBatteryVoltage();
+    m_motorVoltage = MathUtil.clamp(m_voltageSupplier.get(), -battery, battery);
 
     // Command motors to do things
-    // FIXME check what needs to be done for limiting max voltage
     m_drivetrain.tankDriveVolts(
-      (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * voltage, voltage
+      (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * m_motorVoltage, m_motorVoltage
     );
 
     m_numberArray[0] = now;
@@ -212,12 +238,13 @@ public class Robot extends TimedRobot {
     System.out.println("Robot disabled");
     m_drivetrain.tankDriveVolts(0, 0);
 
+    m_sysIdOverflowEntry.setBoolean(m_entries.size() >= 36_000);
+
     // data processing step
-    m_data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
-    m_sysIdTelemetryEntry.setString(m_data);
+    String data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
+    m_sysIdTelemetryEntry.setString(data);
     m_entries.clear();
     System.out.println("Collected: " + m_counter + " in " + elapsedTime + " seconds");
-    m_data = "";
   }
 
   /**
