@@ -51,30 +51,30 @@ public class Robot extends TimedRobot {
     }
   }
 
-  XboxController m_stick;
+  private XboxController m_stick;
 
-  Supplier<Double> m_leftEncoderPosition;
-  Supplier<Double> m_rightEncoderPosition;
-  Supplier<Double> m_leftEncoderRate;
-  Supplier<Double> m_rightEncoderRate;
-  Supplier<Double> m_gyroAngleRadians;
-  Supplier<Double> m_gyroAngleRate;
-  Supplier<Double> m_voltageSupplier;
+  private Supplier<Double> m_leftEncoderPosition;
+  private Supplier<Double> m_rightEncoderPosition;
+  private Supplier<Double> m_leftEncoderRate;
+  private Supplier<Double> m_rightEncoderRate;
+  private Supplier<Double> m_gyroAngleRadians;
+  private Supplier<Double> m_gyroAngleRate;
+  private Supplier<Double> m_voltageSupplier;
 
-  NetworkTableEntry m_sysIdTelemetryEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTelemetry");
-  NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
-  NetworkTableEntry m_sysIdTestTypeEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTestType");
-  NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmardDashboard/SysIdRotate");
-  NetworkTableEntry m_sysIdTestEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTest");
-  NetworkTableEntry m_sysIdWrongMechEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdWrongMech");
-  NetworkTableEntry m_sysIdOverflowEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdOverflow");
+  private NetworkTableEntry m_sysIdTelemetryEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTelemetry");
+  private NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
+  private NetworkTableEntry m_sysIdTestTypeEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTestType");
+  private NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdRotate");
+  private NetworkTableEntry m_sysIdTestEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTest");
+  private NetworkTableEntry m_sysIdWrongMechEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdWrongMech");
+  private NetworkTableEntry m_sysIdOverflowEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdOverflow");
 
-  int m_counter = 0;
-  double m_startTime = 0;
-  double m_motorVoltage = 0;
+  private int m_counter = 0;
+  private double m_startTime = 0;
+  private double m_motorVoltage = 0;
 
-  double[] m_numberArray = new double[9];
-  ArrayList<Double> m_entries = new ArrayList<>();
+  private double[] m_numberArray = new double[9];
+  private ArrayList<Double> m_entries = new ArrayList<>();
   
   private final RomiDrivetrain m_drivetrain = new RomiDrivetrain();
   private final RomiGyro m_gyro = new RomiGyro();
@@ -91,8 +91,6 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     m_stick = new XboxController(0);
-
-    // Set up the data providers
 
     // Note that the angle from the gyro must be negated because 
     // getAngle returns a clockwise positive
@@ -128,15 +126,8 @@ public class Robot extends TimedRobot {
   }
 
   /**
-   * This autonomous (along with the chooser code above) shows how to select
-   * between different autonomous modes using the dashboard. The sendable
-   * chooser code works with the Java SmartDashboard. If you prefer the
-   * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-   * getString line to get the auto name from the text box below the Gyro
-   *
-   * <p>You can add additional auto modes by adding additional comparisons to
-   * the switch structure below with additional strings. If using the
-   * SendableChooser make sure to add them to the chooser code above as well.
+   * Initialization code for autonomous mode which will be called each time the
+   * robot enters autonomous mode.
    */
   @Override
   public void autonomousInit() {
@@ -152,7 +143,7 @@ public class Robot extends TimedRobot {
 
   private Supplier<Double> createVoltageSupplier() {
     String test = m_sysIdTestEntry.getString(null);
-    if (!"Drivetrain".equals(test)) {
+    if (!("Drivetrain".equals(test) || "Drivetrain (Angular)".equals(test))) {
       m_sysIdWrongMechEntry.setBoolean(true);
     } else {
       // Retreive test type & voltage from network table
