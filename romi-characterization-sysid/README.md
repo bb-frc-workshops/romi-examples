@@ -11,7 +11,7 @@ Load this project, connect to the Romi network, verify that your robot IP addres
 #### Step 2
 Start the SysId data logger. Select mode from `Disabled` to `Client` and type in `localhost` into Team/IP field. Click on `Apply` and the status field will change from `NT Disconnected` to `NT Connected`.
 
-Note that the encoder data that gets sent to frc-characterization is in terms of wheel rotations (and not distance traveled), so you would probably need to change Unit in Project Parameters section to `Rotations`
+Note that the encoder data that gets sent to SysId is in terms of wheel rotations (and not distance traveled), so you would probably need to change Unit in Project Parameters section to `Rotations`
 
 At this point, the robot is ready for characterization.
 
