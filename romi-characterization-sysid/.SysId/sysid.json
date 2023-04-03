@@ -1,0 +1,16 @@
+{
+  "SysId": {
+    "Analysis Type": "General Mechanism",
+    "Generator": {
+      "window": {
+        "visible": false
+      }
+    },
+    "NetworkTables Settings": {
+      "serverTeam": "10.0.0.2"
+    },
+    "dsClient": false,
+    "mode": "Client (NT4)",
+    "serverTeam": "localhost"
+  }
+}

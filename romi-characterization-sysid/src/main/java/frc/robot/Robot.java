@@ -53,6 +53,12 @@ public class Robot extends TimedRobot {
 
   private XboxController m_stick;
 
+  // Potentially helpful reference links
+  // https://github.com/wpilibsuite/sysid/blob/main/docs/data-collection.md
+  // https://github.com/wpilibsuite/sysid/blob/main/sysid-library/src/main/cpp/logging/SysIdLogger.cpp
+  // https://github.com/wpilibsuite/sysid/blob/main/sysid-application/src/main/native/include/sysid/telemetry/TelemetryManager.h
+  // https://github.com/wpilibsuite/sysid/blob/main/sysid-application/src/main/native/cpp/telemetry/TelemetryManager.cpp
+
   private Supplier<Double> m_leftEncoderPosition;
   private Supplier<Double> m_rightEncoderPosition;
   private Supplier<Double> m_leftEncoderRate;
@@ -68,6 +74,7 @@ public class Robot extends TimedRobot {
   private NetworkTableEntry m_sysIdTestEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTest");
   private NetworkTableEntry m_sysIdWrongMechEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdWrongMech");
   private NetworkTableEntry m_sysIdOverflowEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdOverflow");
+  private NetworkTableEntry m_sysIdAckNumberEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdAckNumber");
 
   private int m_counter = 0;
   private double m_startTime = 0;
@@ -102,8 +109,6 @@ public class Robot extends TimedRobot {
 
     m_rightEncoderPosition = m_drivetrain::getRightDistance;
     m_rightEncoderRate = m_drivetrain::getRightEncoderRate;
-
-    NetworkTableInstance.getDefault().setUpdateRate(0.010);
   }
 
   /**
@@ -184,7 +189,8 @@ public class Robot extends TimedRobot {
 
     // Command motors to do things
     m_drivetrain.tankDriveVolts(
-      (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * m_motorVoltage, m_motorVoltage
+      (m_sysIdRotateEntry.getBoolean(false) ? -1 : 1) * m_motorVoltage, 
+      m_motorVoltage
     );
 
     m_numberArray[0] = now;
@@ -225,6 +231,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void disabledInit() {
+    double ackNumber = m_sysIdAckNumberEntry.getDouble(0);
     double elapsedTime = Timer.getFPGATimestamp() - m_startTime;
     System.out.println("Robot disabled");
     m_drivetrain.tankDriveVolts(0, 0);
@@ -232,9 +239,14 @@ public class Robot extends TimedRobot {
     m_sysIdOverflowEntry.setBoolean(m_entries.size() >= 36_000);
 
     // data processing step
-    String data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
+    String testType = m_sysIdTestTypeEntry.getString("").equals("Dynamic") ? "fast" : "slow";
+    String direction = m_sysIdVoltageCommandEntry.getDouble(0) > 0.0 ? "forward" : "backward";
+    String test = testType + "-" + direction;
+    String data = test + ";" + m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
+    m_sysIdAckNumberEntry.setDouble(ackNumber + 1);
     m_sysIdTelemetryEntry.setString(data);
     m_entries.clear();
+
     System.out.println("Collected: " + m_counter + " in " + elapsedTime + " seconds");
   }
 
