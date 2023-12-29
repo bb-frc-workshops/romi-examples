@@ -32,8 +32,8 @@ public final class Constants {
         public static final int RIGHT_ANALOG_LEFT_RIGHT_AXIS = 2;
         public static final int RIGHT_ANALOG_UP_DOWN_AXIS = 3;   
     }
-    // Taken from "Robot Port" specified in the Romi configuration 
-    // on the Web UI at http://10.0.0.2 or http://wpilibpi.local
+    // Taken from "Robot Port" specified in the "External IO Configuration" of 
+    // "Romi" configuration on the Web UI at http://10.0.0.2 or http://wpilibpi.local
     public final class GPIO {
         public static final int EXT0_DIGITAL = 8;
         public static final int EXT1_ANALOG_IN = 0;

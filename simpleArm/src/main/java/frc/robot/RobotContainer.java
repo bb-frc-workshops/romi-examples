@@ -64,8 +64,8 @@ public class RobotContainer {
     m_arm.setDefaultCommand( new JoystickArmCommand(m_arm, m_controller));
 
     m_drivetrain.setDefaultCommand( new ArcadeDrive(m_drivetrain,
-    () -> -m_controller.getRawAxis(1),
-    () -> m_controller.getRawAxis(2)
+    () -> -m_controller.getRawAxis(2),
+    () -> m_controller.getRawAxis(1)
     ));
 
     // Setup SmartDashboard options

@@ -5,9 +5,9 @@
 package frc.robot.commands;
 
 import frc.robot.subsystems.Drivetrain;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 
-public class DriveTime extends CommandBase {
+public class DriveTime extends Command {
   private final double m_duration;
   private final double m_speed;
   private final Drivetrain m_drive;

@@ -14,7 +14,6 @@
     "**/.factorypath": true,
     "**/*~": true
   },
-  "wpilib.skipSelectSimulateExtension": true,
   "java.test.config": [
     {
       "name": "WPIlibUnitTests",

@@ -7,9 +7,9 @@ package frc.robot.commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.Arm;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 
-public class JoystickArmCommand extends CommandBase {
+public class JoystickArmCommand extends Command {
 
   private final Arm m_arm;
   private final Joystick m_joystick;
