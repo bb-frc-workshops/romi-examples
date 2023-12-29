@@ -6,7 +6,7 @@ package frc.robot.commands;
 
 import frc.robot.Constants;
 import frc.robot.subsystems.Arm;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj.Joystick;
 
  /**
@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.Joystick;
    * @param Joystick This is the controller you'd like to use for control of the "arm".
    */
 
-public class MoveArm extends CommandBase {
+public class MoveArm extends Command {
     private final Joystick m_joystick;
     private final Arm m_arm;
     private final double delta = 0.01;
