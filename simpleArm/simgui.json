@@ -4,5 +4,8 @@
       "/FMSInfo": "FMSInfo",
       "/SmartDashboard/SendableChooser[0]": "String Chooser"
     }
+  },
+  "NetworkTables Info": {
+    "visible": true
   }
 }
