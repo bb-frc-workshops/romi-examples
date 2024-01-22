@@ -5,9 +5,9 @@
 package frc.robot.commands;
 
 import frc.robot.subsystems.Drivetrain;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 
-public class DriveDistance extends CommandBase {
+public class DriveDistance extends Command {
   private final Drivetrain m_drive;
   private final double m_distance;
   private final double m_speed;
