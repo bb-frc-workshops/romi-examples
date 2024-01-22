@@ -1,9 +1,6 @@
-/*----------------------------------------------------------------------------*/
-/* Copyright (c) 2017-2020 FIRST. All Rights Reserved.                        */
-/* Open Source Software - may be modified and shared by FRC teams. The code   */
-/* must be accompanied by the FIRST BSD license file in the root directory of */
-/* the project.                                                               */
-/*----------------------------------------------------------------------------*/
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
 
@@ -62,6 +59,7 @@ public class Robot extends TimedRobot {
   private Supplier<Double> m_voltageSupplier;
 
   private NetworkTableEntry m_sysIdTelemetryEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTelemetry");
+  private NetworkTableEntry m_sysIdAckNumberyEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdAckNumber");
   private NetworkTableEntry m_sysIdVoltageCommandEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdVoltageCommand");
   private NetworkTableEntry m_sysIdTestTypeEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdTestType");
   private NetworkTableEntry m_sysIdRotateEntry = NetworkTableInstance.getDefault().getEntry("/SmartDashboard/SysIdRotate");
@@ -72,6 +70,8 @@ public class Robot extends TimedRobot {
   private int m_counter = 0;
   private double m_startTime = 0;
   private double m_motorVoltage = 0;
+  private int m_ackNum = 0;
+  private String m_testName;
 
   private double[] m_numberArray = new double[9];
   private ArrayList<Double> m_entries = new ArrayList<>();
@@ -102,8 +102,6 @@ public class Robot extends TimedRobot {
 
     m_rightEncoderPosition = m_drivetrain::getRightDistance;
     m_rightEncoderRate = m_drivetrain::getRightEncoderRate;
-
-    NetworkTableInstance.getDefault().setUpdateRate(0.010);
   }
 
   /**
@@ -139,6 +137,9 @@ public class Robot extends TimedRobot {
     m_startTime = Timer.getFPGATimestamp();
     m_voltageSupplier = createVoltageSupplier();
     m_counter = 0;
+    m_entries.clear();
+    m_sysIdTelemetryEntry.setString("");
+    m_ackNum = m_sysIdAckNumberyEntry.getNumber(0).intValue();
   }
 
   private Supplier<Double> createVoltageSupplier() {
@@ -149,13 +150,17 @@ public class Robot extends TimedRobot {
       // Retreive test type & voltage from network table
       double reqVoltage = m_sysIdVoltageCommandEntry.getDouble(0);
       String testType = m_sysIdTestTypeEntry.getString(null);
+      String testDirection = reqVoltage > 0 ? "forward" : "backward";
 
       if ("Quasistatic".equals(testType)) {
+        m_testName = "slow-" + testDirection;
         return new QuasistaticVoltageSupplier(reqVoltage);
       } else if ("Dynamic".equals(testType)) {
+        m_testName = "fast-" + testDirection;
         return () -> reqVoltage;
       }
     }
+    m_testName = "";
     return () -> 0.0;
   }
 
@@ -233,7 +238,8 @@ public class Robot extends TimedRobot {
 
     // data processing step
     String data = m_entries.stream().map(String::valueOf).collect(Collectors.joining(","));
-    m_sysIdTelemetryEntry.setString(data);
+    m_sysIdTelemetryEntry.setString(m_testName + ";" + data);
+    m_sysIdAckNumberyEntry.setNumber(++m_ackNum);
     m_entries.clear();
     System.out.println("Collected: " + m_counter + " in " + elapsedTime + " seconds");
   }
@@ -243,6 +249,11 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void disabledPeriodic() {
+    int currentAckNum = m_sysIdAckNumberyEntry.getNumber(0).intValue();
+    if (currentAckNum > m_ackNum) {
+      m_sysIdTelemetryEntry.setString("");
+      m_ackNum = currentAckNum;
+    }
   }
 
   /**
