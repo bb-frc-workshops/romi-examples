@@ -1,5 +1,7 @@
 # Romi Trajectory Follower
 
+ **<span style="color:red">THIS USES SOME DEPRECATED FUNCTIONS AND REMAINS TO BE SEEN IF CAN SUPPORT PAST 2024!!!</span>**
+
 ## Description
 This example showcases how to use the WPILib `RamseteCommand` to make your Romi follow a predefined trajectory. These trajectories can be hand crafted, or generated using a tool like PathWeaver.
 
